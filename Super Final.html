@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sistem Monitoring Daya — Full</title>
+
+<style>
+  :root{
+    --bg:#0f1720; --card:#111318; --muted:#9aa4b2; --accent:#4C6EF5; --accent-2:#ff7a59; --text:#eef2f7;
+    --success:#27ae60; --danger:#e74c3c;
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f7fb; --card:#ffffff; --muted:#546574; --accent:#3461d9; --accent-2:#ff6b4a; --text:#0b1220;
+    --success:#1e9a4a; --danger:#c0392b;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: "Segoe UI", Inter, system-ui, Arial;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+
+  /* layout */
+  .page{display:none}
+  .vh-center{height:100vh; display:flex; align-items:center; justify-content:center}
+
+  /* Home */
+  #home{height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,var(--accent), #1a237e); text-align:center}
+  #home h1{font-size:36px;margin:0 0 8px}
+  #home p{margin:0 0 18px; color:rgba(255,255,255,.9)}
+  .btn{
+    display:inline-block; padding:12px 20px; background:#fff; color:var(--accent); border-radius:10px; cursor:pointer;
+    border:none; font-weight:600; box-shadow:0 8px 24px rgba(0,0,0,.15);
+  }
+
+  /* Login */
+  #loginPage{height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#4C6EF5,#7950F2)}
+  .login-card{width:380px; background:var(--card); padding:28px; border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,.35);}
+  .login-card h2{margin:0 0 16px; color:var(--accent)}
+  .field{width:100%; margin:8px 0}
+  input[type=text], input[type=password], input[type=number], input[type=date]{
+    width:100%; padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,.06); background:transparent; color:var(--text);
+  }
+  .muted{color:var(--muted); font-size:13px}
+  .login-actions{display:flex; gap:12px; margin-top:12px}
+  .btn-accent{background:var(--accent); color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; flex:1}
+  .btn-outline{background:transparent; border:1px solid rgba(255,255,255,.08); color:var(--text); padding:12px; border-radius:8px; cursor:pointer; flex:1}
+
+  /* Dashboard layout */
+  #dashboard{display:none; min-height:100vh; background:var(--bg);}
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,255,255,0)); position:sticky; top:0; z-index:5}
+  .brand{font-weight:700; font-size:18px}
+  .controls{display:flex; gap:10px; align-items:center}
+  .theme-toggle{padding:8px 12px; border-radius:8px; background:transparent; border:1px solid rgba(255,255,255,.06); cursor:pointer; color:var(--text)}
+  .grid{display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:18px; padding:20px; max-width:1200px; margin:18px auto}
+
+  .card{
+    background:var(--card); padding:18px; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.35);
+    transition:transform .25s, box-shadow .25s, background .25s; cursor:pointer; overflow:hidden;
+  }
+  .card:hover{transform:translateY(-6px); box-shadow:0 20px 48px rgba(0,0,0,.45)}
+  .card h3{margin:0 0 8px; font-size:16px}
+  .stat{font-size:28px; font-weight:700}
+
+  /* sections */
+  .section{max-width:1200px; margin:16px auto; padding:18px}
+  .flex{display:flex; gap:14px; align-items:center}
+  .right{margin-left:auto}
+
+  /* Table */
+  table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14px}
+  th, td{padding:10px; border-bottom:1px solid rgba(255,255,255,.04); text-align:center}
+  th{background:rgba(255,255,255,.02); color:var(--muted); font-weight:600}
+  .small{font-size:13px; color:var(--muted)}
+
+  /* Chart container */
+  #chartWrap{background:var(--card); padding:14px; border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,.35)}
+
+  /* forms */
+  .form-row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .form-row > *{flex:1}
+
+  /* other pages */
+  .page-content{max-width:1000px; margin:18px auto; padding:20px}
+
+  /* small screens */
+  @media (max-width:600px){
+    .login-card{width:92%}
+  }
+
+  /* subtle animated entry */
+  .enter{
+    animation: enterAnim .45s ease both;
+  }
+  @keyframes enterAnim{
+    from{opacity:0; transform:translateY(8px)}
+    to{opacity:1; transform:none}
+  }
+
+  /* legend style */
+  .legend{display:flex; gap:12px; align-items:center; font-size:13px}
+  .legend-item{display:flex; gap:8px; align-items:center}
+  .swatch{width:12px; height:12px; border-radius:3px}
+  
+  /* download button */
+  .btn-download{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:white; padding:10px 14px; border-radius:10px; border:none; cursor:pointer}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- HOME -->
+<div id="home" class="page" style="display:block">
+  <h1>Selamat Datang</h1>
+  <p style="opacity:.95">Sistem Monitoring Daya — Full Version</p>
+  <div style="height:12px"></div>
+  <button class="btn" onclick="showPage('loginPage')">Mulai / Masuk</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginPage" class="page vh-center" style="display:none">
+  <div class="login-card enter">
+    <h2>Login Pengguna</h2>
+    <div class="muted small">Masuk dengan akun demo: <strong>admin</strong> / <strong>123</strong></div>
+    <div style="height:12px"></div>
+    <input id="loginUser" type="text" placeholder="Nama Pengguna" />
+    <input id="loginPass" type="password" placeholder="Kata Sandi" />
+    <div class="login-actions" style="margin-top:12px">
+      <button class="btn-accent" onclick="doLogin()">Masuk</button>
+      <button class="btn-outline" onclick="showPage('home')">Kembali</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="page" style="display:none">
+  <div class="topbar">
+    <div class="brand">Monitoring Daya • Dashboard</div>
+    <div class="controls">
+      <div class="small muted" id="userLabel">Halo, -</div>
+      <button class="theme-toggle" onclick="toggleTheme()">Toggle Tema</button>
+      <button class="theme-toggle" onclick="showPage('home')">Logout</button>
+    </div>
+  </div>
+
+  <!-- cards -->
+  <div class="grid" style="max-width:1200px">
+    <div class="card enter" onclick="showSection('tabel')">
+      <h3>📊 Data Daya</h3>
+      <div class="stat" id="statTotal">-- kWh</div>
+      <div class="small muted">Total pemakaian (sample)</div>
+    </div>
+
+    <div class="card enter" onclick="showSection('grafik')">
+      <h3>📈 Grafik Pemakaian</h3>
+      <div class="small muted">Lihat tren pemakaian</div>
+    </div>
+
+    <div class="card enter" onclick="showSection('input')">
+      <h3>➕ Tambah Data</h3>
+      <div class="small muted">Masukkan data baru secara manual</div>
+    </div>
+
+    <div class="card enter" onclick="showSection('pengaturan')">
+      <h3>⚙️ Pengaturan</h3>
+      <div class="small muted">Opsi tampilan & export</div>
+    </div>
+
+    <div class="card enter" onclick="showSection('laporan')">
+      <h3>🧾 Laporan</h3>
+      <div class="small muted">Export & download CSV</div>
+    </div>
+
+    <div class="card enter" onclick="showSection('akun')">
+      <h3>👤 Akun</h3>
+      <div class="small muted">Profil pengguna</div>
+    </div>
+
+    <div class="card enter" onclick="showSection('datalain')">
+      <h3>📁 Data Lain</h3>
+      <div class="small muted">Konten tambahan / placeholder</div>
+    </div>
+  </div>
+
+  <!-- Sections -->
+  <div id="tabel" class="section page-content" style="display:none">
+    <div style="display:flex; align-items:center; gap:10px">
+      <h2 style="margin:0">Tabel Data</h2>
+      <div class="right">
+        <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
+      </div>
+    </div>
+    <div id="tabelContainer" style="margin-top:12px; background:var(--card); padding:14px; border-radius:12px">
+      <table id="dataTable">
+        <!-- diisi JS -->
+      </table>
+    </div>
+  </div>
+
+  <div id="grafik" class="section page-content" style="display:none">
+    <div style="display:flex; align-items:center; gap:12px">
+      <h2 style="margin:0">Grafik Pemakaian</h2>
+      <div class="legend right" style="margin-left:auto">
+        <div class="legend-item"><div class="swatch" style="background:var(--accent)"></div> Pemakaian</div>
+        <div class="legend-item"><div class="swatch" style="background:var(--accent-2)"></div> Daya Masuk</div>
+      </div>
+    </div>
+    <div id="chartWrap" style="margin-top:12px">
+      <canvas id="mainChart" width="1000" height="300" style="width:100%;height:320px;display:block"></canvas>
+    </div>
+  </div>
+
+  <div id="input" class="section page-content" style="display:none">
+    <h2 style="margin:0 0 10px">Tambah Data Manual</h2>
+    <div style="background:var(--card); padding:14px; border-radius:12px">
+      <div class="form-row">
+        <input id="inHari" type="text" placeholder="Hari / Tanggal (misal: 2025-11-14)" />
+        <input id="inMasuk" type="number" placeholder="Daya Masuk (kWh)" min="0" />
+        <input id="inPakai" type="number" placeholder="Pemakaian (kWh)" min="0" />
+        <button class="btn-accent" onclick="addData()">Tambah</button>
+      </div>
+      <div class="muted small" style="margin-top:8px">Data akan otomatis muncul di tabel & grafik.</div>
+    </div>
+  </div>
+
+  <div id="pengaturan" class="section page-content" style="display:none">
+    <h2 style="margin:0 0 10px">Pengaturan</h2>
+    <div style="background:var(--card); padding:14px; border-radius:12px">
+      <div style="display:flex; gap:12px; align-items:center">
+        <div>
+          <label class="small muted">Mode Tema</label><br/>
+          <button class="theme-toggle" onclick="setTheme('dark')">Gelap</button>
+          <button class="theme-toggle" onclick="setTheme('light')">Terang</button>
+        </div>
+        <div style="margin-left:auto">
+          <label class="small muted">Reset Data</label><br/>
+          <button class="btn-outline" onclick="resetSample()">Reset ke sample</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="laporan" class="section page-content" style="display:none">
+    <h2 style="margin:0 0 10px">Laporan</h2>
+    <div style="background:var(--card); padding:14px; border-radius:12px">
+      <p class="muted">Download laporan data dalam format CSV untuk analisa lebih lanjut.</p>
+      <button class="btn-download" onclick="downloadCSV()">Download CSV</button>
+    </div>
+  </div>
+
+  <div id="akun" class="section page-content" style="display:none">
+    <h2 style="margin:0 0 10px">Akun</h2>
+    <div style="background:var(--card); padding:14px; border-radius:12px">
+      <p><strong>Nama:</strong> demo user</p>
+      <p><strong>Email:</strong> demo@example.com</p>
+      <p class="muted small">Ini hanya halaman profil sederhana (mock).</p>
+    </div>
+  </div>
+
+  <div id="datalain" class="section page-content" style="display:none">
+    <h2 style="margin:0 0 10px">Data Lain</h2>
+    <div style="background:var(--card); padding:14px; border-radius:12px">
+      <p class="muted">Placeholder untuk data lain / integrasi masa depan.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ---------- state ---------- */
+let state = {
+  user: null,
+  data: [
+    {hari:"Senin", masuk:120, pakai:90},
+    {hari:"Selasa", masuk:130, pakai:100},
+    {hari:"Rabu", masuk:140, pakai:110},
+    {hari:"Kamis", masuk:150, pakai:120},
+    {hari:"Jumat", masuk:160, pakai:130}
+  ]
+};
+
+/* ---------- navigation ---------- */
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+function showSection(id){
+  // show dashboard and section
+  showPage('dashboard');
+  // hide all sections
+  ['tabel','grafik','input','pengaturan','laporan','akun','datalain'].forEach(s=>{
+    const el=document.getElementById(s);
+    if(el) el.style.display='none';
+  });
+  // show requested
+  document.getElementById(id).style.display='block';
+  // update content if needed
+  if(id==='tabel') renderTable();
+  if(id==='grafik') renderChart();
+  if(id==='input') {/* nothing */}
+}
+
+/* ---------- login ---------- */
+function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  if(u==='admin' && p==='123'){
+    state.user = 'admin';
+    document.getElementById('userLabel').textContent = 'Halo, ' + state.user;
+    showSection('tabel');
+    renderTable();
+    renderChart();
+  } else {
+    alert('Username atau password salah!');
+  }
+}
+
+/* ---------- table ---------- */
+function renderTable(){
+  const table = document.getElementById('dataTable');
+  table.innerHTML = '';
+  // header
+  table.insertAdjacentHTML('beforeend',`
+    <tr><th>No</th><th>Hari / Tanggal</th><th>Daya Masuk (kWh)</th><th>Pemakaian (kWh)</th><th>Aksi</th></tr>
+  `);
+  let totalPakai=0;
+  state.data.forEach((r,i)=>{
+    totalPakai += Number(r.pakai);
+    table.insertAdjacentHTML('beforeend',`
+      <tr>
+        <td>${i+1}</td>
+        <td>${escapeHtml(r.hari)}</td>
+        <td>${r.masuk}</td>
+        <td>${r.pakai}</td>
+        <td><button onclick="removeData(${i})" style="padding:6px 10px; border-radius:8px; border:none; cursor:pointer">Hapus</button></td>
+      </tr>
+    `);
+  });
+  document.getElementById('statTotal').textContent = totalPakai + ' kWh';
+}
+
+/* ---------- add / remove data ---------- */
+function addData(){
+  const hari = document.getElementById('inHari').value.trim();
+  const masuk = Number(document.getElementById('inMasuk').value);
+  const pakai = Number(document.getElementById('inPakai').value);
+  if(!hari || isNaN(masuk) || isNaN(pakai)){
+    alert('Isi semua field dengan benar!');
+    return;
+  }
+  state.data.push({hari, masuk, pakai});
+  document.getElementById('inHari').value='';
+  document.getElementById('inMasuk').value='';
+  document.getElementById('inPakai').value='';
+  renderTable();
+  renderChart();
+  alert('Data berhasil ditambahkan.');
+}
+
+function removeData(index){
+  if(!confirm('Hapus data ini?')) return;
+  state.data.splice(index,1);
+  renderTable();
+  renderChart();
+}
+
+/* ---------- CSV download ---------- */
+function downloadCSV(){
+  let csv = 'No,Hari,DayaMasuk_kWh,Pemakaian_kWh\r\n';
+  state.data.forEach((r,i)=> csv += `${i+1},"${r.hari}",${r.masuk},${r.pakai}\r\n`);
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'laporan_daya.csv'; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- theme ---------- */
+function toggleTheme(){
+  const root = document.documentElement;
+  const cur = root.getAttribute('data-theme') || 'dark';
+  const next = cur==='dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+}
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+}
+
+/* ---------- reset ---------- */
+function resetSample(){
+  if(!confirm('Reset data ke sampel awal?')) return;
+  state.data = [
+    {hari:"Senin", masuk:120, pakai:90},
+    {hari:"Selasa", masuk:130, pakai:100},
+    {hari:"Rabu", masuk:140, pakai:110},
+    {hari:"Kamis", masuk:150, pakai:120},
+    {hari:"Jumat", masuk:160, pakai:130}
+  ];
+  renderTable(); renderChart();
+}
+
+/* ---------- chart (custom, multi dataset) ---------- */
+function renderChart(){
+  const canvas = document.getElementById('mainChart');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr,dpr);
+  // clear
+  ctx.clearRect(0,0,rect.width,rect.height);
+  // prepare data
+  const labels = state.data.map(r=>r.hari);
+  const valuesPakai = state.data.map(r=>Number(r.pakai));
+  const valuesMasuk = state.data.map(r=>Number(r.masuk));
+  if(valuesPakai.length===0){
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
+    ctx.fillText('Tidak ada data', 20, 40);
+    return;
+  }
+  // config
+  const padding = {l:40, r:20, t:20, b:40};
+  const w = rect.width - padding.l - padding.r;
+  const h = rect.height - padding.t - padding.b;
+  const maxV = Math.max(...valuesPakai.concat(valuesMasuk))*1.1;
+  const minV = 0;
+  // draw grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  const gridLines = 4;
+  ctx.font = '12px Segoe UI';
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
+  for(let i=0;i<=gridLines;i++){
+    const y = padding.t + (h/gridLines)*i;
+    ctx.beginPath();
+    ctx.moveTo(padding.l, y);
+    ctx.lineTo(padding.l + w, y);
+    ctx.stroke();
+    const v = Math.round((maxV - (maxV-minV)*(i/gridLines)));
+    ctx.fillText(v, 6, y+4);
+  }
+  // draw x labels
+  ctx.textAlign = 'center';
+  for(let i=0;i<labels.length;i++){
+    const x = padding.l + (i/(labels.length-1 || 1))*w;
+    ctx.fillText(labels[i], x, padding.t + h + 20);
+  }
+  // helper to convert value to y
+  const valToY = v => padding.t + h - ((v-minV)/(maxV-minV || 1))*h;
+  // draw lines
+  function drawLine(values, color, width){
+    ctx.beginPath();
+    for(let i=0;i<values.length;i++){
+      const x = padding.l + (i/(values.length-1 || 1))*w;
+      const y = valToY(values[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+    // draw points
+    for(let i=0;i<values.length;i++){
+      const x = padding.l + (i/(values.length-1 || 1))*w;
+      const y = valToY(values[i]);
+      ctx.beginPath();
+      ctx.fillStyle = color;
+      ctx.arc(x,y,4,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+  // background fill area (subtle)
+  ctx.beginPath();
+  for(let i=0;i<valuesPakai.length;i++){
+    const x = padding.l + (i/(valuesPakai.length-1 || 1))*w;
+    const y = valToY(valuesPakai[i]);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.lineTo(padding.l + w, padding.t + h);
+  ctx.lineTo(padding.l, padding.t + h);
+  ctx.closePath();
+  ctx.fillStyle = hexToRgba(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4C6EF5', 0.08);
+  ctx.fill();
+
+  // draw both lines: pakai (accent) and masuk (accent-2)
+  drawLine(valuesPakai, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4C6EF5', 3);
+  drawLine(valuesMasuk, getComputedStyle(document.documentElement).getPropertyValue('--accent-2').trim() || '#ff7a59', 2.2);
+
+  // draw legend texts right-top
+  ctx.textAlign='left';
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text');
+  ctx.fillText('Pemakaian (kWh)', rect.width - 180, padding.t + 14);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--muted');
+  ctx.fillText('Daya Masuk (kWh)', rect.width - 180, padding.t + 34);
+  // draw swatches
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+  ctx.fillRect(rect.width - 200, padding.t + 6, 12, 12);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2');
+  ctx.fillRect(rect.width - 200, padding.t + 26, 12, 12);
+}
+
+/* ---------- util ---------- */
+function hexToRgba(hex, a){
+  hex = hex.replace('#','');
+  if(hex.length===3) hex = hex.split('').map(h=>h+h).join('');
+  const r=parseInt(hex.substr(0,2),16), g=parseInt(hex.substr(2,2),16), b=parseInt(hex.substr(4,2),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) }
+
+/* ---------- init ---------- */
+(function init(){
+  // start at home already
+  // attach keyboard quick login for dev (Ctrl+L)
+  window.addEventListener('keydown', e=>{
+    if(e.ctrlKey && e.key.toLowerCase()==='l'){ document.getElementById('loginUser').value='admin'; document.getElementById('loginPass').value='123'; doLogin(); }
+  });
+})();
+
+</script>
+</body>
+</html>
